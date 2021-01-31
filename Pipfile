@@ -7,6 +7,10 @@ name = "pypi"
 fastapi = "*"
 uvicorn = {extras = ["standard"], version = "*"}
 pipreqs = "*"
+sqlalchemy = "*"
+google-auth = "*"
+gspread = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
