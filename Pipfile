@@ -11,6 +11,7 @@ sqlalchemy = "*"
 google-auth = "*"
 gspread = "*"
 python-dotenv = "*"
+pydantic = "*"
 
 [dev-packages]
 
