@@ -8,12 +8,11 @@ app = FastAPI()
 
 async def get_records():
    json_str = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-   print(json_str)
-   json_data = json.loads(json_str)
+   # json_data = json.loads(json_str)
    # json_data['private_key'] = json_data['private_key'].replace('\\n', '\n')
    scope = ['https://spreadsheets.google.com/feeds',
                'https://www.googleapis.com/auth/drive']
-   cred = credentials.Credentials.from_authorized_user_info(json_data, scope)
+   cred = credentials.Credentials.from_authorized_user_info(json_str, scope)
    gc = gspread.authorize(credentials)
    work_sheet = await gc.open("Testing API").sheet1
    return work_sheet
