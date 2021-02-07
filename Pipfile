@@ -7,11 +7,13 @@ name = "pypi"
 fastapi = "*"
 uvicorn = {extras = ["standard"], version = "*"}
 pipreqs = "*"
-sqlalchemy = "*"
 google-auth = "*"
 gspread = "*"
 python-dotenv = "*"
 pydantic = "*"
+psycopg2 = "*"
+psycopg2-binary = "*"
+python-multipart = "*"
 
 [dev-packages]
 
