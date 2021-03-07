@@ -1,9 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
+from pydantic import BaseModel
 from internal.worksheet import get_worksheet
 from routers.authentication import get_current_user
+from internal.column_indexes import col_ind
 
 router = APIRouter()
+
+class RecordData(BaseModel):
+   row: int
+   column: str
+   data: str
 
 def get_assigned_record(record):
    record["SCOT Options"] = record["SCOT Options"].partition(" - ")[0]
@@ -41,6 +48,11 @@ async def get_user_records():
          }
       )
    return records
+
+@router.post("/records")
+async def post_user_record(record_data: RecordData):
+   wks = await get_worksheet()
+   wks.update_cell(record_data.row, col_ind[record_data.column], record_data.data)
 
 @router.get("/unassigned")
 async def get_unassigned_records():
