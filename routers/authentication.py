@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from database import get_connection_and_cursor
 from internal.errors import authentication_errors
 from models.user import User
-from models.auth import Token
 from internal.environment import secret, alg
 
 TOKEN_EXP_MIN = 1440
