@@ -8,6 +8,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:3000",
+    "https://consults-ui-mobile.sergeigushchyn.repl.co"
 ]
 
 app.add_middleware(
