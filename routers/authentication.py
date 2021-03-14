@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from database import get_connection_and_cursor
 from internal.errors import authentication_errors
-from models.user import User
+from models.user import User, Login, Register
 from internal.environment import secret, alg
 
 TOKEN_EXP_MIN = 1440
@@ -48,29 +48,27 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
    return user
 
 @router.post("/register")
-async def register_user(email: str = Form(...), 
-                        password: str = Form(...),
-                        first_name: str = Form(...),
-                        last_name: str = Form(...)):
+async def register_user(register: Register):
    conn, cur = get_connection_and_cursor()
    cur.execute("""
       insert into users (email, hashed_password, first_name, last_name)
       values(%s, crypt(%s, gen_salt(%s)), %s, %s);
       """,
-      (email, password, 'bf', first_name, last_name))
+      (register.email, register.password, 'bf', register.first_name, register.last_name))
    conn.commit()
    cur.close()
    conn.close()
+   return "Worked"
 
 @router.post("/login")
-async def login_user(email: str = Form(...), password: str = Form(...)):
+async def login_user(login: Login):
    conn, cur = get_connection_and_cursor()   
    cur.execute("""
       select email, first_name, last_name from users
       where email = %s
       and hashed_password = crypt(%s, hashed_password);
       """,
-      (email, password))
+      (login.email, login.password))
    user = User(**cur.fetchone())
    if not user:
       raise HTTPException(
