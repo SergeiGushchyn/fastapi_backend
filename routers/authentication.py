@@ -32,20 +32,20 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
    try:
       payload = jwt.decode(token, secret, algorithms=[alg])
       email: str = payload.get("sub")
+      conn, cur = get_connection_and_cursor()
+      cur.execute("""
+      select email, first_name, last_name from users
+      where email = %s;
+      """,
+      [email])
+      user = User(**cur.fetchone())
+      if user is None:
+         raise credentials_exception
+      return user
       if email is None:
          raise credentials_exception
    except JWTError:
       raise credentials_exception
-   conn, cur = get_connection_and_cursor()
-   cur.execute("""
-      select email, first_name, last_name from users
-      where email = %s;
-      """,
-      (email))
-   user = User(**cur.fetchone())
-   if user is None:
-      raise credentials_exception
-   return user
 
 @router.post("/register")
 async def register_user(register: Register):
@@ -80,4 +80,6 @@ async def login_user(login: Login):
    access_token = create_token(
       data={"sub": user.email}, expires_delta=access_token_expires
    )
+   cur.close()
+   conn.close()
    return {"access_token": access_token, "token_type": "bearer"}
