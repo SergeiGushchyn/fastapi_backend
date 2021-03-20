@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from pydantic import BaseModel
 from internal.worksheet import get_worksheet
 from routers.authentication import get_current_user
 from internal.column_indexes import col_ind
+from models.user import User
 
 router = APIRouter()
 
@@ -24,11 +25,11 @@ def get_assigned_record(record):
    }
 
 @router.get("/records")
-async def get_user_records():
+async def get_user_records(user: User = Depends(get_current_user)):
    wks = await get_worksheet()
    all_records = wks.get_all_records()
    records = []
-   for item in wks.findall("Federico Reader"):
+   for item in wks.findall(user.first_name + " " + user.last_name):
       # indexes of the Google Spreadsheet are 2 positions higher from regular array indexing
       ri = item.row - 2
       all_records[ri]["SCOT Options"] = all_records[ri]["SCOT Options"].partition(" - ")[0]
@@ -50,7 +51,7 @@ async def get_user_records():
    return records
 
 @router.post("/records")
-async def post_user_record(record_data: RecordData):
+async def post_user_record(record_data: RecordData, user: User = Depends(get_current_user)):
    wks = await get_worksheet()
    wks.update_cell(record_data.row, col_ind[record_data.column], record_data.data)
 
