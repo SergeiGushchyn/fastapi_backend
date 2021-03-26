@@ -32,6 +32,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
    try:
       payload = jwt.decode(token, secret, algorithms=[alg])
       email: str = payload.get("sub")
+      if email is None:
+         raise credentials_exception
       conn, cur = get_connection_and_cursor()
       cur.execute("""
       select email, first_name, last_name from users
@@ -39,11 +41,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
       """,
       [email])
       user = User(**cur.fetchone())
+      conn.close()
+      cur.close()
       if user is None:
          raise credentials_exception
       return user
-      if email is None:
-         raise credentials_exception
    except JWTError:
       raise credentials_exception
 
