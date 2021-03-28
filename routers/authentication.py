@@ -6,9 +6,10 @@ from pydantic import parse_obj_as
 from datetime import datetime, timedelta
 
 from database import get_connection_and_cursor
-from internal.errors import authentication_errors
 from models.user import User, Login, Register
 from internal.environment import secret, alg
+
+import psycopg2
 
 TOKEN_EXP_MIN = 1440
 
@@ -16,12 +17,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter()
 
-def create_token(data: dict, expires_delta: timedelta):
+def create_token(data: dict):
+   access_token_expires = timedelta(minutes=TOKEN_EXP_MIN)
    to_encode = data.copy()
-   expire = datetime.utcnow() + expires_delta
+   expire = datetime.utcnow() + access_token_expires
    to_encode.update({"exp": expire})
    encoded_jwt = jwt.encode(to_encode, secret, algorithm=alg)
-   return encoded_jwt
+   return {"access_token": encoded_jwt, "token_type": "bearer"}
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
    credentials_exception = HTTPException(
@@ -41,26 +43,36 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
       """,
       [email])
       user = User(**cur.fetchone())
-      conn.close()
-      cur.close()
       if user is None:
          raise credentials_exception
       return user
    except JWTError:
       raise credentials_exception
+   finally:
+      conn.close()
+      cur.close()
 
 @router.post("/register")
 async def register_user(register: Register):
-   conn, cur = get_connection_and_cursor()
-   cur.execute("""
+   try:
+      conn, cur = get_connection_and_cursor()
+      cur.execute("""
       insert into users (email, hashed_password, first_name, last_name)
       values(%s, crypt(%s, gen_salt(%s)), %s, %s);
       """,
       (register.email, register.password, 'bf', register.first_name, register.last_name))
-   conn.commit()
-   cur.close()
-   conn.close()
-   return "Worked"
+      conn.commit()
+      access_token = create_token({"sub": register.email})
+      return access_token
+   except psycopg2.Error as e:
+      raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED,
+      detail=e.diag.message_detail.partition("=")[2],
+      headers={"WWW-Authenticate": "Bearer"},
+   )
+   finally:
+      cur.close()
+      conn.close()
 
 @router.post("/login")
 async def login_user(login: Login):
@@ -72,16 +84,13 @@ async def login_user(login: Login):
       """,
       (login.email, login.password))
    user = User(**cur.fetchone())
+   cur.close()
+   conn.close()
    if not user:
       raise HTTPException(
          status_code=status.HTTP_401_UNAUTHORIZED,
          detail="Incorrect username or password",
          headers={"WWW-Authenticate": "Bearer"},
       )
-   access_token_expires = timedelta(minutes=TOKEN_EXP_MIN)
-   access_token = create_token(
-      data={"sub": user.email}, expires_delta=access_token_expires
-   )
-   cur.close()
-   conn.close()
+   access_token = create_token({"sub": user.email})
    return {"access_token": access_token, "token_type": "bearer"}
