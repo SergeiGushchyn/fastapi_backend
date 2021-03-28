@@ -93,4 +93,4 @@ async def login_user(login: Login):
          headers={"WWW-Authenticate": "Bearer"},
       )
    access_token = create_token({"sub": user.email})
-   return {"access_token": access_token, "token_type": "bearer"}
+   return access_token
