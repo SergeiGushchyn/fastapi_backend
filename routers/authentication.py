@@ -52,6 +52,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
       conn.close()
       cur.close()
 
+@router.get("/user")
+async def get_user(user = User(Depends(get_current_user))):
+   if user is not None:
+      return user
+
+
 @router.post("/register")
 async def register_user(register: Register):
    try:
