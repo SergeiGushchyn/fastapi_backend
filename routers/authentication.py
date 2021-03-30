@@ -43,14 +43,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
       """,
       [email])
       user = User(**cur.fetchone())
+      conn.close()
+      cur.close()
       if user is None:
          raise credentials_exception
       return user
    except JWTError:
       raise credentials_exception
-   finally:
-      conn.close()
-      cur.close()
 
 @router.get("/user")
 async def get_user(user: User = Depends(get_current_user)):
