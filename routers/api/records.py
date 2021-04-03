@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from typing import List
 from pydantic import BaseModel
 from internal.worksheet import get_worksheet
 from routers.authentication import get_current_user
 from internal.column_indexes import col_ind
 from models.user import User
+
+import psycopg2
 
 router = APIRouter()
 
@@ -52,8 +54,16 @@ async def get_user_records(user: User = Depends(get_current_user)):
 
 @router.post("/records")
 async def post_user_record(record_data: RecordData, user: User = Depends(get_current_user)):
-   wks = await get_worksheet()
-   wks.update_cell(record_data.row, col_ind[record_data.column], record_data.data)
+   try:
+      wks = await get_worksheet()
+      wks.update_cell(record_data.row, col_ind[record_data.column], record_data.data)
+      return "Success"
+   except psycopg2.Error as e:
+      raise HTTPException(
+      status_code=status.HTTP_500_SERVER_ERROR,
+      detail="Server Error",
+      headers={"WWW-Authenticate": "Bearer"},
+   )
 
 @router.get("/unassigned")
 async def get_unassigned_records():
