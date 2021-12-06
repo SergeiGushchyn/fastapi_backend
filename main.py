@@ -7,8 +7,7 @@ from routers.api import records
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",
-    "https://consults-ui-mobile.sergeigushchyn.repl.co"
+    "http://localhost:3000"
 ]
 
 app.add_middleware(
